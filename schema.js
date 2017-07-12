@@ -1,5 +1,6 @@
-import { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLList, GraphQLSchema } from 'graphql';
+import { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLList, GraphQLSchema, GraphQLNonNull } from 'graphql';
 import Db from './db';
+import Sequelize from 'sequelize';
 
 const User = new GraphQLObjectType({
     name: 'User',
@@ -12,13 +13,13 @@ const User = new GraphQLObjectType({
                     return user.id
                 }
             },
-            first_name: {
+            firstName: {
                 type: GraphQLString,
                 resolve(user) {
                     return user.first_name
                 }
             },
-            last_name: {
+            lastName: {
                 type: GraphQLString,
                 resolve(user) {
                     return user.last_name
@@ -34,8 +35,36 @@ const User = new GraphQLObjectType({
                 type: new GraphQLList(Post),
                 resolve(user) {
                     return user.getPosts();
+                },
+                args: {
+                limit: {
+                    name: 'limit',
+                    type: GraphQLInt
+                },
+
+                offset: {
+                    name: 'offset',
+                    type: GraphQLInt
                 }
             }
+            },
+            userLikes: {
+                type: new GraphQLList(Like),
+                resolve(user) {
+                    return user.getLikes();
+                },
+                args: {
+                    limit: {
+                        name: 'limit',
+                        type: GraphQLInt
+                    },
+
+                    offset: {
+                        name: 'offset',
+                        type: GraphQLInt
+                    }
+                }
+        }    
         }
     }
 });
@@ -51,13 +80,13 @@ const Post = new GraphQLObjectType({
                     return post.id
                 }
             },
-            date_created: {
+            dateCreated: {
                 type: GraphQLString,
                 resolve(post) {
                     return post.date_created
                 }
             },
-            last_updated: {
+            lastUpdated: {
                 type: GraphQLString,
                 resolve(post) {
                     return post.last_updated
@@ -69,7 +98,7 @@ const Post = new GraphQLObjectType({
                     return post.content
                 }
             },
-            image_link: {
+            imageLink: {
                 type: GraphQLString,
                 resolve(post) {
                     return post.image_link
@@ -92,6 +121,26 @@ const Post = new GraphQLObjectType({
                 resolve(post) {
                     return post.getComments();
                 }
+            },
+            likesCount: {
+                type: GraphQLInt,
+                resolve(post) { 
+                    return Db.models.like.count({
+                        where: {
+                            post_id: post.id
+                        }
+                    });
+                }               
+            },
+            commentsCount: {
+                type: GraphQLInt,
+                resolve(post) {
+                    return Db.models.comment.count({
+                        where: {
+                            post_id: post.id
+                        }
+                    });
+                }
             }
         }
     }
@@ -108,22 +157,28 @@ const Comment = new GraphQLObjectType({
                     return comment.id
                 }
             },
-            comment_text: {
+            commentText: {
                 type: GraphQLString,
                 resolve(comment) {
                     return comment.comment_text
                 }
             },
-            date_created: {
+            dateCreated: {
                 type: GraphQLString,
                 resolve(comment) {
                     return comment.date_created
                 }
             },
-            last_updated: {
+            lastUpdated: {
                 type: GraphQLString,
                 resolve(comment) {
                     return comment.last_updated
+                }
+            },
+            user: {
+                type: User,
+                resolve(comment) {
+                    return comment.getUser();
                 }
             }
         }
@@ -145,8 +200,34 @@ const Like = new GraphQLObjectType({
     }
 });
 
+const Mutation = new GraphQLObjectType({
+    name: 'Mutation',
+    description: 'This is a mutation',
+    fields: () => {
+        return {
+            addLike: {
+                type: Like,
+                args: {
+                    userId: {
+                        type: new GraphQLNonNull(GraphQLInt)
+                    },
+                    postId: {
+                        type: new GraphQLNonNull(GraphQLInt)
+                    }
+                },
+                    resolve(root_, args) {
+                        return Db.models.like.create({
+                            post_id: args.postId,
+                            user_id: args.userId
+                        });
+                    }
+            }
+        }
+    }
+});
+
 const Query = new GraphQLObjectType({
-    name: 'Query',
+    name: 'RootQuery',
     description: 'This is a root query',
     fields: () => { 
         return {
@@ -189,7 +270,10 @@ const Query = new GraphQLObjectType({
                     },
                     comment_text: {
                         type: GraphQLString
-                    } 
+                    },
+                    post_id: {
+                        type: GraphQLInt
+                    }
                 },
                 resolve(root, args) {
                     return Db.models.comment.findAll({ where: args });
@@ -200,7 +284,8 @@ const Query = new GraphQLObjectType({
 });
 
 const Schema = new GraphQLSchema({
-    query: Query
+    query: Query,
+    mutation: Mutation
 });
 
 export default Schema;

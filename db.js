@@ -34,7 +34,7 @@ const Post = Conn.define(
         },
         image_link: {
             type: Sequelize.STRING,
-            allowNull: true
+            allowNull: true,
         }
     }, {
         freezeTableName: true,
@@ -96,7 +96,7 @@ User.hasMany(Post);
 User.hasMany(Comment);
 
 Like.belongsTo(Post);
-
+Like.belongsTo(User);
 /*
 Conn.sync({ force: true }).then(() => {
     _.times(10, () => {
