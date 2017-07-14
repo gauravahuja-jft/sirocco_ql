@@ -1,4 +1,4 @@
-import { GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLList, GraphQLSchema, GraphQLNonNull } from 'graphql';
+import { GraphQLObjectType, GraphQLID, GraphQLInt, GraphQLString, GraphQLList, GraphQLSchema, GraphQLNonNull } from 'graphql';
 import Db from './db';
 import Sequelize from 'sequelize';
 
@@ -203,6 +203,7 @@ const Like = new GraphQLObjectType({
 const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     description: 'This is a mutation',
+    debug: true,
     fields: () => {
         return {
             addLike: {
@@ -215,7 +216,7 @@ const Mutation = new GraphQLObjectType({
                         type: new GraphQLNonNull(GraphQLInt)
                     }
                 },
-                    resolve(root_, args) {
+                resolve(root_, args) {
                         return Db.models.like.create({
                             post_id: args.postId,
                             user_id: args.userId
