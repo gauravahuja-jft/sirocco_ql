@@ -222,6 +222,27 @@ const Mutation = new GraphQLObjectType({
                             user_id: args.userId
                         });
                     }
+            },
+            addComment: {
+                type: Comment,
+                args: {
+                    commentText: {
+                        type: new GraphQLNonNull(GraphQLString)
+                    },
+                    postId: {
+                        type: new GraphQLNonNull(GraphQLInt)
+                    },
+                    userId: {
+                        type: new GraphQLNonNull(GraphQLInt)
+                    }
+                },
+                resolve(root_, args) {
+                    return Db.models.comment.create({
+                        comment_text: args.commentText,
+                        post_id: args.postId,
+                        user_id: args.userId
+                    });
+                }
             }
         }
     }
